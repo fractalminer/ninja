@@ -99,6 +99,13 @@ int LinePrinter::TerminalColumns( int def ) {
   return def;
 }
 
+int LinePrinter::TerminalRows( int def ) {
+  winsize size;
+  if ((ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) == 0) && size.ws_row)
+    return size.ws_row;
+  return def;
+}
+
 void LinePrinter::Print(string to_print, LineType type) {
   if (GetReformatMode() == e_reformat_mode::pretty) {
     to_print = CustomFormat(to_print);

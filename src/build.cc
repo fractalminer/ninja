@@ -385,7 +385,14 @@ void BuildStatus::PrintStatusScrolling() {
 
   int now = (int)(GetTimeMillis()-start_time_millis_);
 
+  int const emit_rows = std::min(std::max(LinePrinter::TerminalRows( /*def=*/80 )-4,4), int(running_edges_.size()));
+  int const overflow = running_edges_.size() - emit_rows;
+  bool const has_overflow = overflow > 0;
+
+  int lines_emitted = 0;
   for( auto const& p : running_edges_ ) {
+    if( lines_emitted >= emit_rows ) break;
+    ++lines_emitted;
     Edge const* edge = p.first;
     int time_start = p.second;
 
@@ -407,22 +414,28 @@ void BuildStatus::PrintStatusScrolling() {
     printer_.PrintWithoutNewLine("\x1B[K");  // Clear to end of line.
     printer_.PrintWithoutNewLine("\n");
   }
+  if( has_overflow ) {
+    ++lines_emitted;
+    printer_.PrintWithoutNewLine("\x1B[K");  // Clear to end of line.
+    printer_.PrintWithoutNewLine(std::string("\u001b[38;5;244m  (") + std::to_string(running_edges_.size()) +
+        " total tasks|" + std::to_string(overflow) + " hidden tasks)\033[0m\n");
+  }
 
   // Check if we need to clear out the additional lines from the
   // last status that had more lines.
-  if (prev_running_edge_count_ > running_edges_.size()) {
-    int const lines = prev_running_edge_count_ - running_edges_.size();
+  if (prev_running_edge_count_ > lines_emitted) {
+    int const lines = prev_running_edge_count_ - lines_emitted;
     ClearScrollingOutput( lines );
   }
 
   // Move cursor back up to the top.
-  for( size_t i = 0; i < running_edges_.size(); ++i )
+  for( size_t i = 0; i < lines_emitted; ++i )
     printer_.PrintWithoutNewLine("\r\x1B[A");
 
   // One for the progress bar.
   printer_.PrintWithoutNewLine("\r\x1B[A");
 
-  prev_running_edge_count_ = running_edges_.size();
+  prev_running_edge_count_ = lines_emitted;
   printer_.PrintWithoutNewLine("\x1B[?25h");  // show cursor.
   fflush(stdout);
 }

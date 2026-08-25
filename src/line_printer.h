@@ -60,9 +60,10 @@ struct LinePrinter {
   static e_status_print_mode GetStatusPrintMode();
   static e_reformat_mode GetReformatMode();
 
-  // Get number of columns in terminal, or return specified de-
-  // fault value if not available.
+  // Get number of columns/rows in terminal, or return specified
+  // default value if not available.
   static int TerminalColumns( int def );
+  static int TerminalRows( int def );
 
  private:
   /// Whether we can do fancy terminal control codes.
