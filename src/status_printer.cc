@@ -278,7 +278,6 @@ void StatusPrinter::BuildEdgeFinished(const Builder& builder, Edge* edge, int64_
     // only a few hundred available on some systems, and ninja can launch
     // thousands of parallel compile commands.)
     if (printer_.supports_color() || output.find('\x1b') == std::string::npos) {
-      printer_.PrintOnNewLine(output);
       if (GetStatusPrintMode() == e_status_print_mode::scrolling) {
         // Remove any status lines from the display otherwise the
         // subprocess output will get put over top of it and it
