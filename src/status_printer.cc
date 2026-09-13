@@ -32,11 +32,11 @@
 #endif
 
 #include "build.h"
-#include "scrolling.h"
-#include "metrics.h"
 #include "debug_flags.h"
 #include "exit_status.h"
 #include "lexer.h"
+#include "metrics.h"
+#include "scrolling.h"
 #include "util.h"
 
 using namespace std;
@@ -64,7 +64,8 @@ Status* Status::factory(const BuildConfig& config) {
 
 StatusPrinter::StatusPrinter(const BuildConfig& config)
     : config_(config), started_edges_(0), finished_edges_(0), total_edges_(0),
-      running_edges_(0), prev_running_edges_(0), start_time_millis_(GetTimeMillis()), progress_status_format_(NULL),
+      running_edges_(0), prev_running_edges_(0),
+      start_time_millis_(GetTimeMillis()), progress_status_format_(NULL),
       current_rate_(config.parallelism) {
   // Don't do anything fancy in verbose mode.
   if (config_.verbosity != BuildConfig::NORMAL)
@@ -209,8 +210,10 @@ void StatusPrinter::RecalculateProgressPrediction() {
   time_predicted_percentage_ = cpu_time_millis_ / total_cpu_time_millis;
 }
 
-void StatusPrinter::BuildEdgeFinished(const Builder& builder, Edge* edge, int64_t start_time_millis,
-                                      int64_t end_time_millis, ExitStatus exit_code,
+void StatusPrinter::BuildEdgeFinished(const Builder& builder, Edge* edge,
+                                      int64_t start_time_millis,
+                                      int64_t end_time_millis,
+                                      ExitStatus exit_code,
                                       const string& output) {
   time_millis_ = end_time_millis;
   ++finished_edges_;
@@ -236,7 +239,8 @@ void StatusPrinter::BuildEdgeFinished(const Builder& builder, Edge* edge, int64_
   // printed lines stutters each time an edge finishes, as op-
   // posed to the finished edge's line just getting smoothly re-
   // placed by the next edge, which is what we want.
-  if (!edge->use_console() && GetStatusPrintMode() != e_status_print_mode::scrolling)
+  if (!edge->use_console() &&
+      GetStatusPrintMode() != e_status_print_mode::scrolling)
     PrintStatus(builder, edge, end_time_millis);
 
   --running_edges_;
@@ -336,9 +340,9 @@ string StatusPrinter::FormatProgressStatus(const char* progress_status_format,
         // Started edges.
       case 's': {
         snprintf(buf, sizeof(buf), "%d", started_edges_);
-        int padding = total_edges_length-int(string(buf).size());
+        int padding = total_edges_length - int(string(buf).size());
         for (int i = 0; i < padding; ++i)
-            out += ' ';
+          out += ' ';
         out += buf;
         break;
       }
@@ -548,17 +552,17 @@ string StatusPrinter::FormatStatusVariable(StringPiece name) const {
 // last line of the console.
 void StatusPrinter::ClearScrollingOutput(int const lines) {
   printf("\x1B[?25l");  // hide cursor.
-  for( size_t i = 0; i < lines; ++i )
+  for (size_t i = 0; i < lines; ++i)
     printer_.PrintExtend("\x1B[K\n");  // Clear to end of line then new line
-  for( size_t i = 0; i < lines; ++i )
+  for (size_t i = 0; i < lines; ++i)
     printer_.PrintExtend("\x1B[A");  // cursor up.
-  printf("\x1B[?25h");  // show cursor.
+  printf("\x1B[?25h");               // show cursor.
   fflush(stdout);
 }
 
 // Clear all scrolling output.
 void StatusPrinter::ClearScrollingOutput() {
-  int const lines = prev_running_edges_+1; // +1 for progress bar.
+  int const lines = prev_running_edges_ + 1;  // +1 for progress bar.
   ClearScrollingOutput(lines);
 }
 
@@ -590,54 +594,56 @@ void StatusPrinter::PrintStatusScrolling(const Builder& builder) {
   // the usual status output. The reason that our final executa-
   // bles have use_console=true is because CMake generates ninja
   // rules files where the custom commands have pool=console.
-  bool const is_single_console_cmd
-        = running_edges == 1 &&
-          builder.running_edges_map().begin()->first->use_console();
+  bool const is_single_console_cmd =
+      running_edges == 1 &&
+      builder.running_edges_map().begin()->first->use_console();
   if (is_single_console_cmd) {
-      ClearScrollingOutput();
-      prev_running_edges_ = 1;
-      return;
+    ClearScrollingOutput();
+    prev_running_edges_ = 1;
+    return;
   }
 
-  float percent = float( started_edges_ )/total_edges_;
+  float percent = float(started_edges_) / total_edges_;
   percent = (percent > 1.0) ? 1.0 : percent;
-  int screen_columns = TerminalColumns( /*def=*/80 );
-  int progress_columns = int( percent*screen_columns );
+  int screen_columns = TerminalColumns(/*def=*/80);
+  int progress_columns = int(percent * screen_columns);
   printer_.PrintExtend("\u001b[38;5;244m");
   for (int i = 0; i < screen_columns; ++i) {
-    if( i == 0 )
+    if (i == 0)
       printer_.PrintExtend("[");
-    else if( i < progress_columns && i < screen_columns-1 )
+    else if (i < progress_columns && i < screen_columns - 1)
       printer_.PrintExtend("─");
-      // printer_.PrintExtend("=");
-    else if( i == progress_columns && i < screen_columns-1 )
+    // printer_.PrintExtend("=");
+    else if (i == progress_columns && i < screen_columns - 1)
       printer_.PrintExtend("▶");
-    else if( i < screen_columns-1 )
+    else if (i < screen_columns - 1)
       printer_.PrintExtend(" ");
-    else if( i == screen_columns-1 )
+    else if (i == screen_columns - 1)
       printer_.PrintExtend("]");
   }
   printer_.PrintExtend("\r[ ");
-  printer_.PrintExtend("\033[0m"); // normal
-  printer_.PrintExtend("\033[1m"); // bold
-  printer_.PrintExtend( std::to_string( int( percent*100.0 ) ) );
-  printer_.PrintExtend("%\033[0m: \r"); // normal
+  printer_.PrintExtend("\033[0m");  // normal
+  printer_.PrintExtend("\033[1m");  // bold
+  printer_.PrintExtend(std::to_string(int(percent * 100.0)));
+  printer_.PrintExtend("%\033[0m: \r");  // normal
   printer_.PrintExtend("\n");
 
-  int now = (int)(GetTimeMillis()-start_time_millis_);
+  int now = (int)(GetTimeMillis() - start_time_millis_);
 
-  int const emit_rows = std::min(std::max(TerminalRows( /*def=*/80 )-4,4), int(running_edges));
+  int const emit_rows =
+      std::min(std::max(TerminalRows(/*def=*/80) - 4, 4), int(running_edges));
   int const overflow = running_edges - emit_rows;
   bool const has_overflow = overflow > 0;
 
   int lines_emitted = 0;
   const auto& edges_map = builder.running_edges_map();
-  std::vector<std::pair<const Edge*, int64_t>> sorted_edges(edges_map.begin(), edges_map.end());
-  std::sort(sorted_edges.begin(), sorted_edges.end(), [](const auto& l, const auto& r) {
-      return l.second < r.second;
-  });
-  for( auto const& p : sorted_edges ) {
-    if( lines_emitted >= emit_rows ) break;
+  std::vector<std::pair<const Edge*, int64_t>> sorted_edges(edges_map.begin(),
+                                                            edges_map.end());
+  std::sort(sorted_edges.begin(), sorted_edges.end(),
+            [](const auto& l, const auto& r) { return l.second < r.second; });
+  for (auto const& p : sorted_edges) {
+    if (lines_emitted >= emit_rows)
+      break;
     ++lines_emitted;
     Edge const* edge = p.first;
     int time_start = p.second;
@@ -646,36 +652,50 @@ void StatusPrinter::PrintStatusScrolling(const Builder& builder) {
     string to_print = edge->GetBinding("description");
     if (force_full_command)
       to_print = edge->GetBinding("command");
-    if( !to_print.empty() ) {
+    if (!to_print.empty()) {
       // This will print the numerical status, e.g. [34/120] on each line.
-      // to_print = FormatProgressStatus(progress_status_format_, kEdgeStarted) + to_print;
-      printer_.Print(to_print,
-                     force_full_command ? LinePrinter::FULL : LinePrinter::ELIDE);
-      int delta_secs = (now-time_start)/1000;
-      std::string running_time = std::string(" (") + std::to_string(delta_secs) + "s)";
-      printer_.PrintExtend("\u001b[38;5;244m");
-      printer_.PrintExtend(running_time);
-      printer_.PrintExtend("\033[0m"); // normal
+      // to_print = FormatProgressStatus(progress_status_format_, kEdgeStarted)
+      //   + to_print;
+      const auto mode =
+          force_full_command ? LinePrinter::FULL : LinePrinter::ELIDE;
+      if (mode != LinePrinter::FULL) {
+        int delta_secs = (now - time_start) / 1000;
+        std::string running_time =
+            std::string(" (") + std::to_string(delta_secs) + "s)";
+        to_print += "\u001b[38;5;244m";
+        to_print += running_time;
+        to_print += "\033[0m";  // normal
+      }
+      // NOTE: it is importnat to put the entire output (in-
+      // cluding all escape sequences) that we want to emit into
+      // one string and emit it with Print that way it can have a
+      // full view over its length if it needs to elide it due to
+      // the terminal width (if it does elide it then it does it
+      // in an ansi-code aware way).
+      printer_.Print(to_print, mode);
     }
     printer_.PrintExtend("\x1B[K");  // Clear to end of line.
     printer_.PrintExtend("\n");
   }
-  if( has_overflow ) {
+  if (has_overflow) {
     ++lines_emitted;
     printer_.PrintExtend("\x1B[K");  // Clear to end of line.
-    printer_.PrintExtend(std::string("\u001b[38;5;244m  (") + std::to_string(running_edges) +
-        " total tasks|" + std::to_string(overflow) + " hidden tasks)\033[0m\n");
+    // Use Print here so that it can elide the length if needed.
+    printer_.Print(std::string("\u001b[38;5;244m  (") +
+                       std::to_string(running_edges) + " total tasks|" +
+                       std::to_string(overflow) + " hidden tasks)\033[0m\n",
+                   LinePrinter::ELIDE);
   }
 
   // Check if we need to clear out the additional lines from the
   // last status that had more lines.
   if (prev_running_edges_ > lines_emitted) {
     int const lines = prev_running_edges_ - lines_emitted;
-    ClearScrollingOutput( lines );
+    ClearScrollingOutput(lines);
   }
 
   // Move cursor back up to the top.
-  for( size_t i = 0; i < lines_emitted; ++i )
+  for (size_t i = 0; i < lines_emitted; ++i)
     printer_.PrintExtend("\r\x1B[A");
 
   // One for the progress bar.
@@ -686,7 +706,8 @@ void StatusPrinter::PrintStatusScrolling(const Builder& builder) {
   fflush(stdout);
 }
 
-void StatusPrinter::PrintStatus(const Builder& builder, const Edge* edge, int64_t time_millis) {
+void StatusPrinter::PrintStatus(const Builder& builder, const Edge* edge,
+                                int64_t time_millis) {
   if (GetStatusPrintMode() == e_status_print_mode::scrolling) {
     PrintStatusScrolling(builder);
     return;
