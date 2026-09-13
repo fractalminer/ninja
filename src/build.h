@@ -16,6 +16,7 @@
 #define NINJA_BUILD_H_
 
 #include <cstdio>
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -153,6 +154,8 @@ struct Plan {
 
 struct BuildConfig;
 
+using OnUpdateFn = std::function<void()>;
+
 /// CommandRunner is an interface that wraps running the build
 /// subcommands.  This allows tests to abstract out running commands.
 /// RealCommandRunner is an implementation that actually runs commands.
@@ -162,14 +165,15 @@ struct CommandRunner {
   virtual bool StartCommand(Edge* edge) = 0;
 
   /// Wait for a command to complete, or return false if interrupted.
-  virtual BuildResult WaitForCommand() = 0;
+  virtual BuildResult WaitForCommand(const OnUpdateFn& on_update) = 0;
 
   /// Wait for a command to complete or a jobserver token to become available, or
   /// return false if interrupted. Default implementation waits for a command to complete.
   /// Overridden by RealCommandRunner to also wait for jobserver tokens.
-  virtual BuildResult WaitForCommandOrJobserverToken(bool watch_jobserver) {
+  virtual BuildResult WaitForCommandOrJobserverToken(
+      bool watch_jobserver, const OnUpdateFn& on_update) {
     (void)watch_jobserver;
-    return WaitForCommand();
+    return WaitForCommand(on_update);
   }
 
   virtual std::vector<Edge*> GetActiveEdges() { return std::vector<Edge*>(); }
@@ -262,7 +266,9 @@ struct Builder {
   /// (doesn't need to be an enum value of ExitStatus)
   ExitStatus GetExitCode() const { return exit_code_; }
 
-private:
+  const auto& running_edges_map() const { return running_edges_; }
+
+ private:
   /// Parses the CommandCompleted result to extract dependencies.
   /// May modify result.output to extract dependency messages out of it
   /// (such as MSVC /showIncludes).

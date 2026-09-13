@@ -36,6 +36,9 @@ struct LinePrinter {
   /// one line.
   void Print(std::string to_print, LineType type);
 
+  /// Prints a string, not overprinting previous output.
+  void PrintExtend(const std::string& to_print);
+
   /// Prints a string on a new line, not overprinting previous output.
   void PrintOnNewLine(const std::string& to_print);
 

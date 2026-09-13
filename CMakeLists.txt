@@ -18,6 +18,8 @@ else()
   message(STATUS "IPO / LTO not supported: <${error}>")
 endif()
 
+set( CMAKE_EXPORT_COMPILE_COMMANDS ON )  # dsicilia
+
 # --- compiler flags
 if(MSVC)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -126,6 +128,7 @@ check_platform_supports_browse_mode(platform_supports_ninja_browse)
 add_library(libninja OBJECT
   src/build_log.cc
   src/build.cc
+  src/scrolling.cc
   src/clean.cc
   src/clparser.cc
   src/dyndep.cc

@@ -51,7 +51,7 @@ struct DryRunCommandRunner : public CommandRunner {
   // Overridden from CommandRunner:
   size_t CanRunMore() const override;
   bool StartCommand(Edge* edge) override;
-  BuildResult WaitForCommand() override;
+  BuildResult WaitForCommand(const OnUpdateFn& on_update) override;
 
  private:
   queue<Edge*> finished_;
@@ -66,7 +66,7 @@ bool DryRunCommandRunner::StartCommand(Edge* edge) {
   return true;
 }
 
-BuildResult DryRunCommandRunner::WaitForCommand() {
+BuildResult DryRunCommandRunner::WaitForCommand(const OnUpdateFn& on_update) {
   if (finished_.empty())
     return BuildResult::Finished{};
 
@@ -777,8 +777,9 @@ ExitStatus Builder::Build(string* err) {
       // Tell command runner that if jobserver tokens become available while
       // waiting, it should notify us - but only if we have more work to do.
       const bool watch_jobserver = plan_.work_ready();
+      const auto on_update = [this]{ this->status_->OnTick(*this); };
       BuildResult result =
-          command_runner_->WaitForCommandOrJobserverToken(watch_jobserver);
+          command_runner_->WaitForCommandOrJobserverToken(watch_jobserver, on_update);
 
       if (result.finished()) {
         // Shouldn't be possible, since we assumed that there
@@ -856,7 +857,7 @@ bool Builder::StartEdge(Edge* edge, string* err) {
   int64_t start_time_millis = GetTimeMillis() - start_time_millis_;
   running_edges_.insert(make_pair(edge, start_time_millis));
 
-  status_->BuildEdgeStarted(edge, start_time_millis);
+  status_->BuildEdgeStarted(*this, edge, start_time_millis);
 
   TimeStamp build_start = config_.dry_run ? 0 : -1;
 
@@ -938,7 +939,7 @@ bool Builder::FinishCommand(BuildResult::CommandCompleted& result,
   end_time_millis = GetTimeMillis() - start_time_millis_;
   running_edges_.erase(it);
 
-  status_->BuildEdgeFinished(edge, start_time_millis, end_time_millis,
+  status_->BuildEdgeFinished(*this, edge, start_time_millis, end_time_millis,
                              result.status, result.output);
 
   // The rest of this function only applies to successful commands.

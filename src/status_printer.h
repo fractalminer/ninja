@@ -33,12 +33,13 @@ struct StatusPrinter : Status {
   void EdgeAddedToPlan(const Edge* edge) override;
   void EdgeRemovedFromPlan(const Edge* edge) override;
 
-  void BuildEdgeStarted(const Edge* edge, int64_t start_time_millis) override;
-  void BuildEdgeFinished(Edge* edge, int64_t start_time_millis,
+  void BuildEdgeStarted(const Builder& builder, const Edge* edge, int64_t start_time_millis) override;
+  void BuildEdgeFinished(const Builder& builder, Edge* edge, int64_t start_time_millis,
                                  int64_t end_time_millis, ExitStatus exit_code,
                                  const std::string& output) override;
   void BuildStarted() override;
   void BuildFinished() override;
+  void OnTick(const Builder& builder) override;
 
   void NewLine() override;
   void Info(const char* msg, ...) override;
@@ -64,11 +65,15 @@ struct StatusPrinter : Status {
   }
 
  private:
-  void PrintStatus(const Edge* edge, int64_t time_millis);
+  void PrintStatus(const Builder& builder, const Edge* edge, int64_t time_millis);
 
   const BuildConfig& config_;
 
   int started_edges_, finished_edges_, total_edges_, running_edges_;
+  int prev_running_edges_ = {};
+
+  /// When did the build start.
+  int64_t start_time_millis_ = 0;
 
   /// How much wall clock elapsed so far?
   int64_t time_millis_ = 0;
@@ -96,6 +101,10 @@ struct StatusPrinter : Status {
 
   /// Prints progress output.
   LinePrinter printer_;
+
+  void PrintStatusScrolling(const Builder& builder);
+  void ClearScrollingOutput();
+  void ClearScrollingOutput(int lines);
 
   /// An optional Explanations pointer, used to implement `-d explain`.
   Explanations* explanations_ = nullptr;

@@ -29,7 +29,9 @@
 #endif
 
 #include "elide_middle.h"
-#include "util.h"
+#include "scrolling.h"
+
+#include <cstring>
 
 using namespace std;
 
@@ -88,6 +90,13 @@ LinePrinter::LinePrinter() : have_blank_line_(true), console_locked_(false) {
 }
 
 void LinePrinter::Print(string to_print, LineType type) {
+  if (GetReformatMode() == e_reformat_mode::pretty) {
+    to_print = CustomFormat(to_print);
+  }
+  if (GetStatusPrintMode() == e_status_print_mode::multiline) {
+    PrintOnNewLine(to_print);
+    return;
+  }
   if (console_locked_) {
     line_buffer_ = to_print;
     line_type_ = type;
@@ -156,10 +165,23 @@ void LinePrinter::PrintOrBuffer(const char* data, size_t size) {
   }
 }
 
+void LinePrinter::PrintExtend(const string& to_print) {
+  if (console_locked_ && !line_buffer_.empty()) {
+    output_buffer_.append(line_buffer_);
+    line_buffer_.clear();
+  }
+  if (!to_print.empty()) {
+    PrintOrBuffer(&to_print[0], to_print.size());
+  }
+  have_blank_line_ = (!to_print.empty() && *to_print.rbegin() == '\n') ||
+                     (to_print.empty() && have_blank_line_);
+}
+
 void LinePrinter::PrintOnNewLine(const string& to_print) {
   if (console_locked_ && !line_buffer_.empty()) {
     output_buffer_.append(line_buffer_);
     output_buffer_.append(1, '\n');
+    have_blank_line_ = true;
     line_buffer_.clear();
   }
   if (!have_blank_line_) {
@@ -175,13 +197,19 @@ void LinePrinter::SetConsoleLocked(bool locked) {
   if (locked == console_locked_)
     return;
 
-  if (locked)
-    PrintOnNewLine("");
+  if (locked) {
+    // Don't start a new line when we lock the console (which in
+    // practice means that we start to run a custom command). In-
+    // stead, just erase the current line to prepare for the cus-
+    // tome command.
+    printf("\r\x1B[K\r");  // Clear to end of line.
+    fflush(stdout);
+  }
 
   console_locked_ = locked;
 
   if (!locked) {
-    PrintOnNewLine(output_buffer_);
+    PrintExtend(output_buffer_);
     if (!line_buffer_.empty()) {
       Print(line_buffer_, line_type_);
     }

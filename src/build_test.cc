@@ -525,7 +525,7 @@ struct FakeCommandRunner : public CommandRunner {
   // CommandRunner impl
   virtual size_t CanRunMore() const;
   virtual bool StartCommand(Edge* edge);
-  virtual BuildResult WaitForCommand();
+  virtual BuildResult WaitForCommand(const OnUpdateFn& on_update);
   virtual vector<Edge*> GetActiveEdges();
   virtual void Abort();
 
@@ -758,7 +758,7 @@ bool FakeCommandRunner::StartCommand(Edge* edge) {
   return true;
 }
 
-BuildResult FakeCommandRunner::WaitForCommand() {
+BuildResult FakeCommandRunner::WaitForCommand(const OnUpdateFn& on_update) {
   if (active_edges_.empty())
     return BuildResult::Finished{};
 

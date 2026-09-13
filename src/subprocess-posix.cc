@@ -352,7 +352,10 @@ SubprocessSet::WorkResult SubprocessSet::DoWork() {
 
   interrupted_ = 0;
   s_sigchld_received = 0;
-  int ret = ppoll(&fds.front(), nfds, NULL, &old_mask_);
+  timespec tmo; // timeout
+  tmo.tv_sec = 0;
+  tmo.tv_nsec = 500000000; // 500ms
+  int ret = ppoll(&fds.front(), nfds, &tmo, &old_mask_);
   // Note: This can remove console processes from the running set, but that is
   // not a problem for the pollfd set, as console processes are not part of the
   // pollfd set (they don't have a fd).
@@ -430,7 +433,10 @@ SubprocessSet::WorkResult SubprocessSet::DoWork() {
 
   interrupted_ = 0;
   s_sigchld_received = 0;
-  int ret = pselect(nfds, (nfds > 0 ? &set : nullptr), 0, 0, 0, &old_mask_);
+  timespec tmo; // timeout
+  tmo.tv_sec = 0;
+  tmo.tv_nsec = 500000000; // 500ms
+  int ret = pselect(nfds, (nfds > 0 ? &set : nullptr), 0, 0, &tmo, &old_mask_);
   CheckConsoleProcessTerminated(&work_result);
   if (ret == -1) {
     if (errno != EINTR) {

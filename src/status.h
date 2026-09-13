@@ -18,6 +18,7 @@
 #include <string>
 #include "exit_status.h"
 
+struct Builder;
 struct BuildConfig;
 struct Edge;
 struct Explanations;
@@ -27,13 +28,14 @@ struct Explanations;
 struct Status {
   virtual void EdgeAddedToPlan(const Edge* edge) = 0;
   virtual void EdgeRemovedFromPlan(const Edge* edge) = 0;
-  virtual void BuildEdgeStarted(const Edge* edge,
+  virtual void BuildEdgeStarted(const Builder& builder, const Edge* edge,
                                 int64_t start_time_millis) = 0;
-  virtual void BuildEdgeFinished(Edge* edge, int64_t start_time_millis,
+  virtual void BuildEdgeFinished(const Builder& builder, Edge* edge, int64_t start_time_millis,
                                  int64_t end_time_millis, ExitStatus exit_code,
                                  const std::string& output) = 0;
   virtual void BuildStarted() = 0;
   virtual void BuildFinished() = 0;
+  virtual void OnTick(const Builder& builder) = 0;
 
   /// Set the Explanations instance to use to report explanations,
   /// argument can be nullptr if no explanations need to be printed
