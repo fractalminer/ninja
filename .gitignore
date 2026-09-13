@@ -19,6 +19,7 @@
 /doc/manual.html
 /doc/doxygen
 *.patch
+*.diff
 .DS_Store
 
 # Eclipse project files

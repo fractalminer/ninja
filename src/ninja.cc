@@ -1782,15 +1782,11 @@ ExitStatus NinjaMain::RunBuild(int argc, char** argv, Status* status) {
   disk_interface_.AllowStatCache(false);
 
   if (builder.AlreadyUpToDate()) {
-    if (config_.verbosity != BuildConfig::NO_STATUS_UPDATE) {
-      status->Info("no work to do.");
-    }
     return ExitSuccess;
   }
 
   ExitStatus exit_status = builder.Build(&err);
   if (exit_status != ExitSuccess) {
-    status->Info("build stopped: %s.", err.c_str());
     if (err.find("interrupted by user") != string::npos) {
       return ExitInterrupted;
     }
