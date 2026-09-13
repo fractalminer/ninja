@@ -55,9 +55,8 @@ namespace {
 struct Replacer {
   string initial_;
   string input_;
-  string final_;
 
-  string result() const { return initial_ + input_ + final_; }
+  string result() const { return initial_ + input_; }
 
   Replacer(string input) : input_(std::move(input)) {
     if (auto start = input_.find("] "); start != string::npos) {
@@ -97,38 +96,51 @@ struct Replacer {
 
 string CustomFormat(string const& input) {
   Replacer r(input);
-  r.prefix_and_remainder("building rds definition ", [&](const string& _1) {
-    return "\u001b[36mbuilding rds script\u001b[0m \u001b[34m"s + _1 +
-           "\u001b[0m";
-  });
-  r.prefix_and_remainder("Building CXX object ", [&](const string& _1) {
-    return "\u001b[32mbuilding c++ object \u001b[34m" + _1 + "\u001b[0m";
-  });
-  r.prefix_and_remainder("Building C object ", [&](const string& _1) {
-    return "\u001b[32mbuilding c   object \u001b[34m" + _1 + "\u001b[0m";
-  });
-  r.prefix_and_remainder("Linking CXX static library ", [&](const string& _1) {
-    return "\u001b[33;1mlinking: c++ static library \u001b[34;1m" + _1 +
-           "\u001b[0m";
-  });
-  r.prefix_and_remainder("Linking CXX executable ", [&](const string& _1) {
-    return "\u001b[33;1mlinking: c++ binary \u001b[34;1m" + _1 + "\u001b[0m";
-  });
-  r.prefix_and_remainder("Linking C static library ", [&](const string& _1) {
-    return "\u001b[33;1mlinking: c   static library \u001b[34;1m" + _1 +
-           "\u001b[0m";
-  });
-  r.prefix_and_remainder("Linking C executable ", [&](const string& _1) {
-    return "\u001b[33;1mlinking: c   binary \u001b[34;1m" + _1 + "\u001b[0m";
-  });
-  r.prefix_then_word("Rendering midi/", [&](const string& _1) {
-    return "\u001b[36mrendering midi file \u001b[0m\u001b[34m" + _1 +
-           "\u001b[0m";
-  });
 
   r.replace("CMakeFiles/", "");
   r.replace(".cpp.o", ".cpp");
+  r.replace(".cc.o", ".cc");
   r.replace(".mid", "");
+
+  // NOTE: there is something slightly tricky done below.. when
+  // we start the color escape sequence for the file name we put
+  // a space after it just before we add _1. That way the regexes
+  // further below are able to easily distinguish those file path
+  // components from the colors that precede them so as not to
+  // eliminate the escape sequences inadvertently.
+
+  r.prefix_and_remainder("building rds definition ", [&](const string& _1) {
+    return "\u001b[36mbuilding rds script\u001b[0m\u001b[34m "s + _1 +
+           "\u001b[0m";
+  });
+  r.prefix_and_remainder("Building CXX object ", [&](const string& _1) {
+    return "\u001b[32mbuilding c++ object\u001b[0m\u001b[34m "s + _1 +
+           "\u001b[0m";
+  });
+  r.prefix_and_remainder("Building C object ", [&](const string& _1) {
+    return "\u001b[32mbuilding c   object\u001b[0m\u001b[34m "s + _1 +
+           "\u001b[0m";
+  });
+  r.prefix_and_remainder("Linking CXX static library ", [&](const string& _1) {
+    return "\u001b[33;1mlinking: c++ static library\u001b[0m\u001b[34;1m "s +
+           _1 + "\u001b[0m";
+  });
+  r.prefix_and_remainder("Linking CXX executable ", [&](const string& _1) {
+    return "\u001b[33;1mlinking: c++ binary\u001b[0m\u001b[34;1m "s + _1 +
+           "\u001b[0m";
+  });
+  r.prefix_and_remainder("Linking C static library ", [&](const string& _1) {
+    return "\u001b[33;1mlinking: c   static library\u001b[0m\u001b[34;1m "s +
+           _1 + "\u001b[0m";
+  });
+  r.prefix_and_remainder("Linking C executable ", [&](const string& _1) {
+    return "\u001b[33;1mlinking: c   binary\u001b[0m\u001b[34;1m "s + _1 +
+           "\u001b[0m";
+  });
+  r.prefix_then_word("Rendering midi/", [&](const string& _1) {
+    return "\u001b[36mrendering midi file\u001b[0m\u001b[34m "s + _1 +
+           "\u001b[0m";
+  });
 
   string res = r.result();
 
